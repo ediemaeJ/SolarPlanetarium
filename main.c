@@ -12,7 +12,7 @@ void CircleFunction(SDL_Renderer *render, int x, int y, int r,
   }
 }
 
-void clearPrev(SDL_Renderer *renderer, TTF_Font *font, const char *current,
+void redraw(SDL_Renderer *renderer, TTF_Font *font, const char *current,
                const char *future, const char *past, int textWidth) {
   int horizontalLines[] = {270, 540, 810};
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -153,17 +153,18 @@ int main() {
   center[0] = drawWidth / 2;
   center[1] = HEIGHT / 2;
 
+  /* open serial communication*/
   int serial_port = openSerial();
   if (serial_port == 1) {
     return 1;
   }
 
-
+  /*begin SDL program*/ 
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     printf("SDL Init Failed: %s\n", SDL_GetError());
     return EXIT_FAILURE;
   }
-
+  
   SDL_Window *window = SDL_CreateWindow("Planetarium", SDL_WINDOWPOS_CENTERED,
                                         SDL_WINDOWPOS_CENTERED, WIDTH,
                                         HEIGHT, // Window width and height.
@@ -177,26 +178,31 @@ int main() {
   SDL_Renderer *renderer =
       SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
+  /*create mutex for display date information*/ 
   inputsMTX = SDL_CreateMutex();
+  
+  /*create thread for reading serial inputs*/ 
   SDL_Thread *serialID =
       SDL_CreateThread(serialRead, "SerialReading", (void *)&serial_port);
 
   time_t currentDate;
   time(&currentDate);
-  long long timeSinceEpoch = (long long)currentDate - 946684800;
-  long long timeSinceLinuxEpoch = (long long)currentDate;
+  long long timeSinceJ200Epoch = (long long)currentDate - LINEPOCH_J200; // calculate seconds since j2000 epoch 
+  long long timeSinceLinuxEpoch = (long long)currentDate; // calculate seconds since linux epoch 
   int daysSinceLinEpoch = timeSinceLinuxEpoch / SECONDS_IN_DAY;
-  int daysSinceEpoch = timeSinceEpoch / SECONDS_IN_DAY;
+  int daysSinceEpoch = timeSinceJ200Epoch / SECONDS_IN_DAY;
 
   TTF_Font *font = TTF_OpenFont(MY_FONT, 24);
 
+  /*create thread for detecting quit key*/ 
   SDL_Thread *threadID =
       SDL_CreateThread(InputThread, "Listener", (void *)&running);
 
-  while (running) {
+  while (running) { // running bool determined by InputThread 
 
     int pastDayRead, futureDayRead;
 
+    /*access mutex for +/- date range*/ 
     SDL_LockMutex(inputsMTX);
     pastDayRead = sharedInputs.minusDays;
     futureDayRead = sharedInputs.plusDays;
@@ -205,33 +211,36 @@ int main() {
     minusDays = pastDayRead;
     plusDays = futureDayRead;
 
+    /*update display*/ 
     timeCalculation(currentDate, current, future, past, plusDays, minusDays);
-
-    clearPrev(renderer, font, current, future, past, textWidth);
-
+    redraw(renderer, font, current, future, past, textWidth);
     RenderText(renderer, font, current, future, past, textWidth);
 
+    /*run simulation*/ 
     if (button == true) {
       int start = -minusDays;
       int finish = +plusDays;
 
-      while (start < finish) {
+      while (start < finish) { // entire date range 
 
         long long simulatedDay = daysSinceLinEpoch + start;
-        long long simulatedSeconds = simulatedDay * SECONDS_IN_DAY;
+        long long simulatedSeconds = simulatedDay * SECONDS_IN_DAY; // day to be displayed in simulation
+        
+        
+        long long actualDate = daysSinceEpoch +start; // day to use for planet rendering (from J200) 
 
-        clearPrev(renderer, font, current, future, past, textWidth);
+        redraw(renderer, font, current, future, past, textWidth); 
         formatDate(simulatedSeconds, simulated);
         simulatedDate(renderer, font, simulated, textWidth);
 
-        planetUpdate(renderer, planets, PLANETS, simulatedDay, center[0],
-                     center[1]);
-        if (!running) {
+        planetUpdate(renderer, planets, PLANETS, actualDate, center[0],
+                     center[1]); 
+        if (!running) { // quit key has been pressed
           start = finish;
           break;
         }
 
-        start++;
+        start++; // increment date in range 
 
         SDL_RenderPresent(renderer);
         SDL_Delay(1);
@@ -240,8 +249,8 @@ int main() {
       tcflush(serial_port, TCIOFLUSH);
 
       button = false;
-    } else if (button == false) {
-      clearPrev(renderer, font, current, future, past, textWidth);
+    } else if (button == false) { // redraw display of current date
+      redraw(renderer, font, current, future, past, textWidth); 
       planetUpdate(renderer, planets, PLANETS, daysSinceEpoch, center[0],
                    center[1]);
     }
@@ -249,7 +258,7 @@ int main() {
     SDL_RenderPresent(renderer);
     SDL_Delay(1);
   }
-
+  /* close program completely */ 
   SDL_DestroyMutex(inputsMTX);
   SDL_WaitThread(serialID, NULL);
   SDL_WaitThread(threadID, NULL);

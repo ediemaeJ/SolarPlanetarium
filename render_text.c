@@ -1,7 +1,7 @@
 #include "render_text.h"
 
 
-    SDL_Color white = {255, 255, 255, 255};
+ SDL_Color white = {255, 255, 255, 255};
 
 
 // Internal helper — renders a single string at (x, y), no manual surface/texture management needed
