@@ -1,3 +1,10 @@
+/* File: time_calc.h
+ * Author: K.McGregor E.Ford M.Underwood
+ * Date: 2026/04/13
+ * Description: This file contains information for calculating time for the Solar Planetarium simulation. 
+ */
+
+
 #ifndef _TIME_CALC_H_
 #define _TIME_CALC_H_
 
@@ -23,6 +30,6 @@ time_t current_time,
     int minus_days
 );
 
-void simulatedCalculation (char *simulated_str, int simulated_value); // replace with our own code ?
+void simulatedCalculation (char *simulated_str, int simulated_value); 
 
 #endif

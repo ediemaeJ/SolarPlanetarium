@@ -1,3 +1,10 @@
+/* File: main.h
+ * Author: E.Ford M.Underwood K.McGregor
+ * Date: 2026/04/13
+ * Description: This header file contains information used in the main program for the Solar Planetarium simulation. 
+ */
+
+
 #include "render_text.h"
 #include "time_calc.h"
 #include <errno.h>
@@ -18,12 +25,15 @@
 #define daysinYear 365
 #define LINEPOCH_J200 946684800 // conversion of linux epoch to j2000 epoch for planet calcs
 #define MY_FONT "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf"
+
 #define WIDTH 1920
 #define HEIGHT 1080
+#define BAUDRATE 115200
 
-volatile bool running = true;
+volatile bool running = true; // controls program operation 
 int drawHeight = 0;
 
+/*information contained in mutex*/
 typedef struct {
   int plusDays; 
   int minusDays; 
@@ -31,17 +41,18 @@ typedef struct {
 
 inputs sharedInputs = {0, 0}; 
 
-SDL_mutex *inputsMTX = NULL; 
+SDL_mutex *inputsMTX = NULL; // create mutex 
 
+/*screen configurations*/ 
 const int drawWidth = (WIDTH - (WIDTH / 6));
-
 const int textWidth = drawWidth + 10;
 
 int plusCalc, minusCalc;
-bool button = false;
+bool button = false; // start button has not been pressed 
 
 int center[2];
 
+/*planets*/ 
 typedef struct {
   const char *name;
   double distanceFromSun;
@@ -53,7 +64,7 @@ typedef struct {
 } Planet;
 
 Planet planets[] = {
-    
+   /* planet name, distance from sun (orbit radius), angle difference from current date, speed of rotation, size (radius), color, base angle (converted to rads from J2000 epoch) */  
     {"Mercury", 60, 0, 87.97, 4, {183, 184, 185, 255}, 252.25 *DEG_TO_RAD},
     {"Venus", 90, 0, 224.70, 6, {248, 226, 176, 255},181.98*DEG_TO_RAD},
     {"Earth", 130, 0, 365.25, 6, {0, 100, 255, 255}, 100.46*DEG_TO_RAD},

@@ -1,3 +1,10 @@
+/* File: render_text.h
+ * Author: M.Underwood K.McGregor E.Ford
+ * Date: 2026/04/13
+ * Description: This file contains information for rendering text in the Solar Planetarium simulation. 
+ */
+
+
 #ifndef _RENDER_TEXT_H
 #define _RENDER_TEXT_H
 
